@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Workout">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Workout Tracker</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --card: #16213e;
+      --card-hover: #1d2a50;
+      --text: #e8e8e8;
+      --muted: #7a8499;
+      --accent: #4a9eff;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 20px 16px 16px;
+    }
+
+    /* ── Header ────────────────────────────────── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .app-title {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+
+    .day-badge {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--card);
+      padding: 5px 12px;
+      border-radius: 20px;
+      letter-spacing: 0.2px;
+    }
+
+    /* ── Day title ─────────────────────────────── */
+    .day-header {
+      margin-bottom: 22px;
+    }
+
+    .day-name {
+      font-size: 38px;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .day-type {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 5px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    /* ── Exercise list ──────────────────────────── */
+    .exercise-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+
+    .exercise-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border-left: 3px solid var(--accent);
+      overflow: hidden;
+      transition: opacity 0.25s;
+    }
+
+    .exercise-card.done { opacity: 0.45; }
+
+    .exercise-main {
+      display: flex;
+      align-items: center;
+      padding: 14px 12px 14px 14px;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+      min-height: 60px;
+    }
+
+    .exercise-main:active { background: var(--card-hover); }
+
+    /* Custom checkbox */
+    .check-wrap {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+    }
+
+    .check-box {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      border: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .check-box.checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .check-box.checked::after {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 10px;
+      border: 2.5px solid #1a1a2e;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg) translateY(-1px);
+    }
+
+    .exercise-info { flex: 1; min-width: 0; }
+
+    .exercise-name {
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1.3;
+      transition: color 0.2s;
+    }
+
+    .exercise-card.done .exercise-name {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    .exercise-tag {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-left: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .exercise-detail {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tip-btn {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      color: var(--muted);
+      font-size: 10px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.2s;
+    }
+
+    .tip-btn:active { background: rgba(255,255,255,0.08); }
+    .tip-btn.open { transform: rotate(180deg); }
+
+    .exercise-tip {
+      padding: 0 14px 14px 52px;
+      font-size: 12.5px;
+      color: #9eaac0;
+      line-height: 1.55;
+      font-style: italic;
+      display: none;
+    }
+
+    .exercise-tip.visible { display: block; }
+
+    /* ── Progress ───────────────────────────────── */
+    .progress-section { margin-bottom: 22px; }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      height: 5px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+      transition: width 0.35s ease;
+    }
+
+    /* ── Complete button ────────────────────────── */
+    .complete-btn {
+      width: 100%;
+      padding: 17px;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--accent);
+      color: #1a1a2e;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      margin-bottom: 36px;
+    }
+
+    .complete-btn:active {
+      transform: scale(0.98);
+      opacity: 0.88;
+    }
+
+    /* ── Reset ──────────────────────────────────── */
+    .reset-section { text-align: center; padding-bottom: 36px; }
+
+    .reset-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      padding: 10px 20px;
+      border-radius: 20px;
+      transition: color 0.2s;
+    }
+
+    .reset-btn:active { color: #ff6b6b; }
+
+    /* ── Overlay ────────────────────────────────── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .overlay-card {
+      background: #1e2a45;
+      border-radius: 22px;
+      padding: 36px 28px;
+      text-align: center;
+      max-width: 320px;
+      width: 90%;
+      transform: scale(0.88) translateY(16px);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .overlay.show .overlay-card { transform: scale(1) translateY(0); }
+
+    .overlay-emoji { font-size: 52px; margin-bottom: 14px; }
+
+    .overlay-title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+
+    .overlay-msg {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+
+    .overlay-next {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      background: rgba(255,255,255,0.06);
+      padding: 10px 16px;
+      border-radius: 10px;
+      margin-bottom: 24px;
+    }
+
+    .overlay-btn {
+      background: var(--accent);
+      color: #1a1a2e;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 36px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .overlay-btn:active { opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+<div class="container" id="app"></div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <div class="overlay-emoji">🎉</div>
+    <div class="overlay-title" id="ov-title">Day A Complete!</div>
+    <div class="overlay-msg">Great work. Keep the momentum going.</div>
+    <div class="overlay-next" id="ov-next">Up next: Day B — Pull</div>
+    <button class="overlay-btn" onclick="closeOverlay()">Let's go →</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  EDIT YOUR WORKOUT PLAN HERE
+// ══════════════════════════════════════════════════
+const DAYS = [
+  {
+    id: 'A', name: 'Day A', type: 'Push', accent: '#4a9eff',
+    exercises: [
+      {
+        name: 'Dead Bug',
+        detail: '2 × 10 / side',
+        tag: 'Warm-up',
+        tip: 'Activate core to protect lower back — exhale slowly as you lower each limb.'
+      },
+      {
+        name: 'Chest Press Machine',
+        detail: '3 × 12  ·  80 lbs',
+        tip: 'Engage core and press your back flat into the seat pad throughout the set.'
+      },
+      {
+        name: 'Seated Shoulder Press',
+        detail: '3 × 10–12  ·  20 lbs',
+        tip: null
+      },
+      {
+        name: 'Tricep Pushdown',
+        detail: '3 × 12–15  ·  20 lbs',
+        tip: null
+      },
+      {
+        name: 'Plank',
+        detail: '3 × 30–45 sec',
+        tip: 'Your natural muscle belt — brace core, neutral spine. Hold strong to finish.'
+      },
+    ]
+  },
+  {
+    id: 'B', name: 'Day B', type: 'Pull', accent: '#4aff9e',
+    exercises: [
+      {
+        name: 'Bird Dog',
+        detail: '2 × 10 / side',
+        tag: 'Warm-up',
+        tip: 'Best exercise for reducing lower back pain. Move slowly with full control.'
+      },
+      {
+        name: 'Lat Pulldown',
+        detail: '3 × 12  ·  100 lbs',
+        tip: 'Pull bar down to chest. Keep torso still — no leaning or rocking back.'
+      },
+      {
+        name: 'Seated Cable Row',
+        detail: '3 × 12  ·  70 lbs',
+        tip: 'Straight back, torso locked still. Pull elbows back and squeeze shoulder blades.'
+      },
+      {
+        name: 'Reverse Pec Deck',
+        detail: '3 × 15  ·  40 lbs',
+        tip: 'Strengthens rear delts — improves posture and hiking gait. Squeeze at end of each rep.'
+      },
+      {
+        name: 'Seated Bicep Curl (Machine)',
+        detail: '3 × 12',
+        tip: 'Seated version reduces lower back stress. Keep elbows pinned throughout.'
+      },
+    ]
+  },
+  {
+    id: 'D', name: 'Day D', type: 'Cardio', accent: '#ff944a',
+    exercises: [
+      {
+        name: 'Treadmill Incline Walk',
+        detail: '35–40 min  ·  Incline 4.0–6.0  ·  Speed 3.0–3.1 mph',
+        tip: 'Don\'t hold the rails — letting go trains balance and core stability at the same time.'
+      },
+    ]
+  },
+  {
+    id: 'C', name: 'Day C', type: 'Legs & Hiking Prep', accent: '#b44aff',
+    exercises: [
+      {
+        name: 'Glute Machine',
+        detail: '3 × 12  ·  50–70 lbs',
+        tip: 'Strong glutes offload the lower back — essential for absorbing impact on descents.'
+      },
+      {
+        name: 'Leg Extension',
+        detail: '3 × 12  ·  90 lbs',
+        tip: 'Quad power for stepping uphill. Control the lowering phase — don\'t let it drop.'
+      },
+      {
+        name: 'Seated Leg Curl',
+        detail: '3 × 12  ·  80 lbs',
+        tip: 'Hamstring strength for braking downhill — the muscle that protects your knees on steep trails.'
+      },
+      {
+        name: 'Seated Calf Raise',
+        detail: '3 × 20  ·  100 lbs',
+        tip: 'Critical for toe-push power on the trail. Full range of motion every single rep.'
+      },
+      {
+        name: 'Abductor Machine',
+        detail: '2 × 15  ·  90 lbs',
+        tip: 'Knee and hip stability — prevents knee-cave on uneven terrain and protects the IT band.'
+      },
+    ]
+  },
+  {
+    id: 'E', name: 'Day E', type: 'Core & Cardio', accent: '#4affea',
+    exercises: [
+      {
+        name: 'Dead Bug',
+        detail: '3 rounds × 10 / side',
+        tag: 'Core Circuit',
+        tip: 'Move slowly, exhale as you lower. This is the foundation of a healthy back.'
+      },
+      {
+        name: 'Bird Dog',
+        detail: '3 rounds × 10 / side',
+        tag: 'Core Circuit',
+        tip: 'Opposite arm and leg — hold 2 seconds at the top. Don\'t let hips rotate or shift.'
+      },
+      {
+        name: 'Side Plank',
+        detail: '3 rounds × 20–30 sec / side',
+        tag: 'Core Circuit',
+        tip: 'Stack feet or stagger for stability. Keep hips lifted — don\'t let them sag toward the floor.'
+      },
+      {
+        name: 'ClimbMill (Stair)',
+        detail: '15–20 min  ·  Speed 3–4',
+        tip: 'Stand tall — don\'t lean on the machine. Leaning removes the core work and stresses the lower back.'
+      },
+    ]
+  },
+];
+// ══════════════════════════════════════════════════
+
+let state   = { dayIndex: 0, checked: [] };
+let openTips = new Set();
+
+function loadState() {
+  try {
+    const idx = localStorage.getItem('workout_dayIndex');
+    const chk = localStorage.getItem('workout_checked');
+    state.dayIndex = idx !== null ? Math.max(0, Math.min(parseInt(idx, 10), DAYS.length - 1)) : 0;
+    state.checked  = chk ? JSON.parse(chk) : [];
+  } catch (e) {
+    state = { dayIndex: 0, checked: [] };
+  }
+  const expected = DAYS[state.dayIndex].exercises.length;
+  if (!Array.isArray(state.checked) || state.checked.length !== expected) {
+    state.checked = new Array(expected).fill(false);
+  }
+}
+
+function saveState() {
+  localStorage.setItem('workout_dayIndex', state.dayIndex);
+  localStorage.setItem('workout_checked', JSON.stringify(state.checked));
+}
+
+function toggleCheck(idx) {
+  state.checked[idx] = !state.checked[idx];
+  saveState();
+  render();
+}
+
+function toggleTip(idx) {
+  openTips.has(idx) ? openTips.delete(idx) : openTips.add(idx);
+  render();
+}
+
+function completeDay() {
+  const cur  = DAYS[state.dayIndex];
+  const next = DAYS[(state.dayIndex + 1) % DAYS.length];
+
+  // Show overlay styled with NEXT day color
+  document.documentElement.style.setProperty('--accent', next.accent);
+  document.getElementById('ov-title').textContent = cur.name + ' Complete!';
+  document.getElementById('ov-next').textContent  = 'Up next: ' + next.name + ' — ' + next.type;
+  document.getElementById('overlay').classList.add('show');
+
+  // Advance to next day
+  state.dayIndex = (state.dayIndex + 1) % DAYS.length;
+  state.checked  = new Array(DAYS[state.dayIndex].exercises.length).fill(false);
+  openTips.clear();
+  saveState();
+}
+
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('show');
+  render();
+}
+
+function resetAll() {
+  if (!confirm('Reset rotation back to Day A? Your current progress will be cleared.')) return;
+  state.dayIndex = 0;
+  state.checked  = new Array(DAYS[0].exercises.length).fill(false);
+  openTips.clear();
+  saveState();
+  render();
+}
+
+function render() {
+  const day      = DAYS[state.dayIndex];
+  const total    = day.exercises.length;
+  const doneCount = state.checked.filter(Boolean).length;
+  const pct      = total ? Math.round((doneCount / total) * 100) : 0;
+
+  document.documentElement.style.setProperty('--accent', day.accent);
+  document.getElementById('app').innerHTML = `
+    <div class="header">
+      <div class="app-title">💪 Workout</div>
+      <div class="day-badge">Day ${state.dayIndex + 1} of ${DAYS.length}</div>
+    </div>
+
+    <div class="day-header">
+      <div class="day-name">${day.name}</div>
+      <div class="day-type">${day.type}</div>
+    </div>
+
+    <div class="exercise-list">
+      ${day.exercises.map((ex, i) => {
+        const done    = state.checked[i];
+        const tipOpen = openTips.has(i);
+        return `
+          <div class="exercise-card ${done ? 'done' : ''}">
+            <div class="exercise-main" onclick="toggleCheck(${i})">
+              <div class="check-wrap">
+                <div class="check-box ${done ? 'checked' : ''}"></div>
+              </div>
+              <div class="exercise-info">
+                <div class="exercise-name">
+                  ${ex.name}${ex.tag ? `<span class="exercise-tag">${ex.tag}</span>` : ''}
+                </div>
+                <div class="exercise-detail">${ex.detail}</div>
+              </div>
+              ${ex.tip ? `
+                <div class="tip-btn ${tipOpen ? 'open' : ''}"
+                     onclick="event.stopPropagation(); toggleTip(${i})">▼</div>
+              ` : ''}
+            </div>
+            ${ex.tip ? `
+              <div class="exercise-tip ${tipOpen ? 'visible' : ''}">💡 ${ex.tip}</div>
+            ` : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-label">
+        <span>Progress</span>
+        <span>${doneCount} / ${total} exercises</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: ${pct}%"></div>
+      </div>
+    </div>
+
+    <button class="complete-btn" onclick="completeDay()">
+      Mark Day Complete ✓
+    </button>
+
+    <div class="reset-section">
+      <button class="reset-btn" onclick="resetAll()">⚙ Reset rotation</button>
+    </div>
+  `;
+}
+
+loadState();
+render();
+</script>
+</body>
+</html>
